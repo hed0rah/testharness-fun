@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fwvault"
+version = "0.3.0"
+description = "Firmware artifact intake service. Exists to be tested."
+requires-python = ">=3.11"
+dependencies = []
+
+# The core is stdlib-only, deliberately. Everything a firmware intake service
+# genuinely needs -- a parser, a policy engine, an ASGI app, an HTTP client --
+# is reachable without a single third-party package, and that is what makes the
+# hand-rolled harnesses in tests/ legible: there is no framework in the way.
+# The extras exist so the SAME behaviour can be re-tested through the tools you
+# would really reach for, and so tests/test_lean_install.py has a boundary to
+# assert.
+[project.optional-dependencies]
+test = ["pytest>=8", "httpx>=0.27", "starlette>=0.37", "hypothesis>=6", "anyio>=4"]
+
+[project.scripts]
+fwvault = "fwvault.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+# -rs so a skip explains itself. A run that says "12 skipped" and nothing else
+# is a run whose coverage you cannot describe.
+addopts = "-rs --strict-markers"
+markers = [
+    "slow: takes real wall-clock time",
+    "net: would touch a real network (never enabled in CI)",
+]
+filterwarnings = [
+    # Our own deprecations are errors: a warning nobody reads is a rename
+    # nobody did. Scoped to fwvault so a dependency's schedule is not ours.
+    "error::DeprecationWarning:fwvault.*",
+    # Starlette 1.3 warns that its TestClient wants httpx2. Not our decision,
+    # and one line of noise on every run trains people to ignore the section
+    # where our own warnings would appear.
+    "ignore::DeprecationWarning:starlette.*",
+    "ignore:.*starlette.testclient.*:UserWarning",
+]

@@ -1,0 +1,54 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Two jobs on purpose. `bare` is the one that matters: it proves a clone with
+  # nothing installed but pytest still runs the suite, which is the claim
+  # tests/test_lean_install.py asserts from the inside. If the extras were
+  # installed everywhere, that claim would be untested in the only environment
+  # that could disprove it.
+  bare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install pytest
+      - run: python -m pytest -q
+
+  full:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false          # one red cell must not hide the others
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[test]"
+      # -p no:randomly keeps the baseline deterministic; the shuffled run is a
+      # separate step so a failure says which of the two it was.
+      - run: python -m pytest -q
+      - run: python -m pytest -q -p no:cacheprovider --durations=10
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[test]" pytest-cov
+      # --cov-branch, because line coverage calls a half-tested `if` covered.
+      # No --cov-fail-under: a coverage threshold is a number people game.
+      # The report is here to be READ, and test_mutation.py is what actually
+      # asks whether the tests assert anything.
+      - run: python -m pytest -q --cov=fwvault --cov-branch --cov-report=term-missing

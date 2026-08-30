@@ -1,0 +1,17 @@
+# Normalise to LF in the repository, whatever the working tree holds.
+#
+# This exists because the generators write with Python's default text mode,
+# which on Windows emits CRLF, while the rest of the world and the sibling
+# site repo are LF. Without this, `python build_card.py` on Windows and on
+# Linux produce byte-different files from identical input, and every rebuild
+# looks like a whole-file rewrite in the diff.
+#
+# `text=auto eol=lf` overrides core.autocrlf, so it holds regardless of how
+# any particular machine is configured.
+* text=auto eol=lf
+
+# Nothing binary is tracked today. Listed so that adding one later is a
+# deliberate edit rather than a corrupted file.
+*.png binary
+*.woff2 binary
+*.pdf binary
