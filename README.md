@@ -9,9 +9,9 @@ stops a suite rotting in the direction of passing.
 Every technique runs against a real specimen project in this repo. Nothing here
 is a snippet.
 
-    python -m pytest -q          # 547 passed, 3 skipped, 1 xfailed  (no install, no deps)
+    python -m pytest -q          # 554 passed, 3 skipped, 1 xfailed  (no install, no deps)
     pip install -e .[test]       # + hypothesis, httpx, starlette
-    python -m pytest -q          # 557 passed, 2 skipped, 1 xfailed
+    python -m pytest -q          # 564 passed, 2 skipped, 1 xfailed
 
 Hosted: https://hed0rah.github.io/testharness/testharness_deep-dive.html
 (field card: https://hed0rah.github.io/testharness/pytest-field-card.html)
@@ -35,11 +35,14 @@ frag.html                    deep dive body; the built page is generated from it
 gen_glossary.py              terms.py -> GLOSSARY.md, glossary_cards.py, frag.html section
 build_card.py                lays out either card; solves the column fit against A4
 build_basics.py              the beginner card, pinned to one sheet
+console_content.py           tabs and cards for the screen reference
+build_console.py             the screen reference; no page to fit, so no solver
 
 GLOSSARY.md                  67 terms, generated
 testharness_deep-dive.html   20 sections, generated from frag.html
 pytest-field-card.html       glossary + 25 recipes, 3 sheets double-sided
 pytest-basics-card.html      14 cards, 1 sheet, larger type
+pytest-console.html          8 tabs, 55 cards, screen-first. prints one page per tab
 
 src/fwvault/                 the specimen: a firmware artifact intake service
 tests/                       one file per technique family
@@ -50,8 +53,15 @@ Three surfaces, three jobs, and they are kept separate on purpose:
 | surface | job | shape |
 |---|---|---|
 | `GLOSSARY.md`, card side 1, deep dive §02 | **look it up** | one line per term, grouped |
-| the field cards | **do it** | command, snippet, table. No argument |
+| the field cards | **do it, on paper** | command, snippet, table. No argument |
+| `pytest-console.html` | **do it, at a screen** | the same, unbounded: system map, seam inventory, evidence matrix, one-liners |
 | the deep dive | **learn it** | narrative, worked examples, the reasoning |
+
+The console exists because the print cards are shaped by A4, and everything on
+them is a compromise with a column height. Dropping that constraint is what
+makes room for a system map, a seam table and as many commands as are useful.
+It still prints: `@media print` reveals every panel and starts each on a new
+page, so a single tab can be printed from the browser's page range.
 
 The editorial rule that keeps them apart: a callout stays on a printed card if
 it changes what you type, and becomes `<div class="why">` if it argues why.

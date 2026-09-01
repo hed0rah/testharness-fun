@@ -300,3 +300,66 @@ def test_generator_modules_parse_and_are_documented(module):
     # tokenize as well: catches a stray null byte or bad encoding that ast
     # would accept through a different code path
     list(tokenize.generate_tokens(io.StringIO(source).readline))
+
+
+# ── the console ─────────────────────────────────────────────────────────────
+
+CONSOLE = (REPO / "pytest-console.html").read_text(encoding="utf-8")
+
+import build_console                               # noqa: E402
+import console_content                             # noqa: E402
+
+
+def test_console_html_is_balanced():
+    assert balance(CONSOLE) == [], balance(CONSOLE)[:3]
+
+
+def test_console_is_self_contained():
+    """It is a reference you open on a plane. No CDN, no webfont, no image."""
+    external = re.findall(r'(?:src|href)="(https?://[^"]+)"', CONSOLE)
+    assert not external, external
+
+
+def test_every_tab_has_a_panel_and_every_panel_a_tab():
+    tabs = set(re.findall(r'<button class="tab" data-for="([^"]+)"', CONSOLE))
+    panels = set(re.findall(r'<section class="panel" id="([^"]+)"', CONSOLE))
+    assert tabs == panels, "orphaned: %s" % sorted(tabs ^ panels)
+    assert len(tabs) == len(console_content.TABS)
+
+
+def test_every_card_carries_a_label():
+    """A card with no label strip is a wall of text in a grid cell."""
+    cards = re.findall(r'<div class="card[^"]*">(.*?)(?=<div class="card|</div>\s*</section>)',
+                       CONSOLE, re.S)
+    missing = [c[:60] for c in cards if 'class="lab"' not in c]
+    assert not missing, "%d cards without a label: %s" % (len(missing), missing[:2])
+
+
+def test_no_long_prose_in_a_nowrap_key_cell():
+    """The bug that broke the deep dive's AI section.
+
+    `td.k` and `td.o` are `white-space: nowrap`, which is right for a short key
+    and catastrophic for a sentence: the row becomes one unwrappable line that
+    runs off the page, taking the other columns with it. Nothing else in the
+    suite can see that, because the HTML is perfectly valid.
+    """
+    cells = [html.unescape(re.sub(r"<[^>]+>", "", c)).strip()
+             for c in re.findall(r'<td class="[ko]">(.*?)</td>', CONSOLE, re.S)]
+    over = [c for c in cells if len(c) > 40]
+    assert not over, "nowrap cells holding prose: %s" % over[:3]
+
+
+def test_the_console_glossary_matches_terms():
+    """The console is the fourth surface generated from terms.py."""
+    tab = next(t for t in console_content.TABS if t["id"] == "glossary")
+    assert len(tab["cards"]) == len(terms.GROUPS)
+    rendered = "".join(tab["cards"])
+    assert rendered.count('<td class="k">') == terms.count()
+
+
+def test_the_console_layout_is_declared_not_measured():
+    """Unlike the print cards, nothing here has to fit a page, so the builder
+    has no solver and no scale knob. Asserted so that if one appears, this test
+    is the reminder to give it a --check like the others have."""
+    assert not hasattr(build_console, "capacity")
+    assert hasattr(build_console, "check")
